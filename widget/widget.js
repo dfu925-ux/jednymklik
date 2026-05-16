@@ -21,7 +21,7 @@
     // ─────────────────────────────────────────────
     // KONFIGURACJA
     // ─────────────────────────────────────────────
-    const API_BASE = 'http://localhost:8000';
+    const API_BASE = 'https://jednymklik-production.up.railway.app';
 
     const script = document.currentScript;
     const CONFIG = {
