@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JednymKlik.pl — Demo Widgetu</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f3f4f6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .demo-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            max-width: 420px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .demo-header {
+            background: #1e293b;
+            color: white;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .demo-header .logo {
+            width: 36px;
+            height: 36px;
+            background: #dc2626;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .demo-header h1 { font-size: 16px; font-weight: 600; }
+        .demo-header p  { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+
+        .demo-body { padding: 24px; }
+
+        .shop-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .order-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .order-card h3 {
+            font-size: 13px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+        .order-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .order-row:last-child { border-bottom: none; }
+        .order-row .label { color: #6b7280; }
+        .order-row .value { font-weight: 500; color: #111827; }
+        .order-row .value.green { color: #059669; }
+
+        .product-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            font-size: 14px;
+        }
+        .product-thumb {
+            width: 40px;
+            height: 40px;
+            background: #f3f4f6;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .widget-slot {
+            margin-top: 4px;
+        }
+
+        .demo-note {
+            margin-top: 16px;
+            padding: 10px 14px;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #92400e;
+        }
+
+        /* Debug panel */
+        .debug-panel {
+            margin: 0 24px 24px;
+            background: #0f172a;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .debug-panel-header {
+            padding: 8px 14px;
+            background: #1e293b;
+            font-size: 11px;
+            color: #94a3b8;
+            font-family: monospace;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .debug-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        .debug-log {
+            padding: 10px 14px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #86efac;
+            min-height: 50px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        .debug-log .log-line { margin-bottom: 3px; }
+        .debug-log .log-err { color: #f87171; }
+        .debug-log .log-info { color: #60a5fa; }
+    </style>
+</head>
+<body>
+
+<div class="demo-card">
+    <!-- Header -->
+    <div class="demo-header">
+        <div class="logo">🛒</div>
+        <div>
+            <h1>Testowy Sklep Demo</h1>
+            <p>Panel klienta — Twoje zamówienia</p>
+        </div>
+    </div>
+
+    <!-- Body -->
+    <div class="demo-body">
+        <div class="shop-badge">✅ W prawdziwym sklepie widget pobiera dane zamówienia automatycznie</div>
+
+        <!-- Order details -->
+        <div class="order-card">
+            <h3>Zamówienie #TEST-2026-0516</h3>
+            <div class="order-row">
+                <span class="label">Data zamówienia</span>
+                <span class="value">16.05.2026</span>
+            </div>
+            <div class="order-row">
+                <span class="label">Status</span>
+                <span class="value green">✓ Dostarczono</span>
+            </div>
+            <div class="order-row">
+                <span class="label">Wartość</span>
+                <span class="value">299,99 zł</span>
+            </div>
+
+            <!-- Products -->
+            <div style="margin-top: 12px; border-top: 1px solid #f3f4f6; padding-top: 12px;">
+                <div class="product-item">
+                    <div class="product-thumb">👟</div>
+                    <div>
+                        <div style="font-weight: 500; font-size: 14px;">Buty sportowe XR-200</div>
+                        <div style="font-size: 12px; color: #6b7280;">Rozmiar 42 · Czarne</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Widget slot — tutaj ładuje się widget -->
+        <div class="widget-slot" id="jednymklik-widget"></div>
+
+        <div class="demo-note">
+            ℹ️ To jest strona demonstracyjna. Widget łączy się z <code>localhost:8000</code>.
+            Upewnij się, że backend działa: <code>uvicorn main:app --reload</code>
+        </div>
+    </div>
+
+    <!-- Debug console -->
+    <div class="debug-panel">
+        <div class="debug-panel-header">
+            <div class="debug-dot"></div>
+            JednymKlik · konsola debugowania
+        </div>
+        <div class="debug-log" id="debug-log">
+            <div class="log-line log-info">▶ Ładowanie widgetu z localhost:8000...</div>
+        </div>
+    </div>
+</div>
+
+<!--
+    ╔══════════════════════════════════════════════╗
+    ║  WIDGET — ładowany z lokalnego backendu      ║
+    ║  API_BASE = http://localhost:8000            ║
+    ╚══════════════════════════════════════════════╝
+-->
+<script
+    src="http://localhost:8000/widget.js"
+    data-shop-id="TEST-SHOP-001"
+    data-shop-token="TEST-TOKEN-ABC123"
+    data-order-id="TEST-2026-0516"
+    data-customer-email="klient@test.pl"
+    data-customer-name="Jan Kowalski"
+    data-order-date="2026-05-16"
+    data-order-value="299.99"
+    data-container-id="jednymklik-widget"
+    data-lang="pl"
+    data-color="#dc2626">
+</script>
+
+<!-- Debug logger — przechwytuje console.log/error z widgetu -->
+<script>
+    const debugLog = document.getElementById('debug-log');
+
+    function addLog(msg, type = 'normal') {
+        const line = document.createElement('div');
+        line.className = 'log-line' + (type === 'error' ? ' log-err' : type === 'info' ? ' log-info' : '');
+        const time = new Date().toLocaleTimeString('pl-PL');
+        line.textContent = `[${time}] ${msg}`;
+        debugLog.appendChild(line);
+        debugLog.scrollTop = debugLog.scrollHeight;
+    }
+
+    // Przechwytuj błędy sieciowe i JS
+    window.addEventListener('error', function(e) {
+        addLog('❌ ' + (e.message || e.filename), 'error');
+    });
+
+    // Przechwytuj unhandled promise rejections
+    window.addEventListener('unhandledrejection', function(e) {
+        addLog('❌ Promise rejection: ' + e.reason, 'error');
+    });
+
+    // Proxy na console.error
+    const origError = console.error.bind(console);
+    console.error = function(...args) {
+        addLog('❌ ' + args.join(' '), 'error');
+        origError(...args);
+    };
+
+    // Proxy na console.log
+    const origLog = console.log.bind(console);
+    console.log = function(...args) {
+        addLog('✓ ' + args.join(' '), 'normal');
+        origLog(...args);
+    };
+
+    // Sprawdź backend po załadowaniu
+    window.addEventListener('load', async function() {
+        try {
+            const r = await fetch('http://localhost:8000/health');
+            if (r.ok) {
+                addLog('✅ Backend online (localhost:8000)', 'normal');
+            } else {
+                addLog('⚠️ Backend odpowiedział: ' + r.status, 'error');
+            }
+        } catch(e) {
+            addLog('❌ Backend niedostępny. Uruchom: uvicorn main:app --reload', 'error');
+        }
+    });
+</script>
+
+</body>
+</html>
