@@ -35,13 +35,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-WIDGET_DIR = os.path.join(os.path.dirname(__file__), "..", "widget")
+WIDGET_DIR = os.path.dirname(__file__)
 if os.path.isdir(WIDGET_DIR):
     app.mount("/static", StaticFiles(directory=WIDGET_DIR), name="static")
 
 @app.get("/widget.js")
 def serve_widget():
-    path = os.path.join(os.path.dirname(__file__), "..", "widget", "widget.js")
+    path = os.path.join(os.path.dirname(__file__), "widget.js")
     if os.path.exists(path):
         return FileResponse(path, media_type="application/javascript")
     raise HTTPException(status_code=404, detail="widget.js nie znaleziony")
