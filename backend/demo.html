@@ -222,11 +222,11 @@
 <!--
     ╔══════════════════════════════════════════════╗
     ║  WIDGET — ładowany z lokalnego backendu      ║
-    ║  API_BASE = http://localhost:8000            ║
+    ║  API_BASE = https://jednymklik-production.up.railway.app            ║
     ╚══════════════════════════════════════════════╝
 -->
 <script
-    src="http://localhost:8000/widget.js"
+    src="https://jednymklik-production.up.railway.app/widget.js"
     data-shop-id="TEST-SHOP-001"
     data-shop-token="TEST-TOKEN-ABC123"
     data-order-id="TEST-2026-0516"
@@ -279,7 +279,7 @@
     // Sprawdź backend po załadowaniu
     window.addEventListener('load', async function() {
         try {
-            const r = await fetch('http://localhost:8000/health');
+            const r = await fetch('https://jednymklik-production.up.railway.app/health');
             if (r.ok) {
                 addLog('✅ Backend online (localhost:8000)', 'normal');
             } else {
