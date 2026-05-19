@@ -27,12 +27,26 @@ log = logging.getLogger("jednymklik")
 
 app = FastAPI(title="JednymKlik.pl API", version="1.0.0")
 
+# ─────────────────────────────────────────────
+# CORS
+# Widget jest osadzany na dowolnym sklepie klienta — Origin nieznany z góry,
+# więc allow_origins="*" jest tu uzasadnione dla endpointów widgetowych.
+# Uwaga: spec CORS zabrania jednocześnie "*" + allow_credentials=True,
+# więc credentials wyłączone — autoryzacja idzie przez shop_token w body/headerze,
+# nie przez ciasteczka.
+#
+# TODO (przed pierwszą sprzedażą): przenieść endpointy administracyjne
+# (rejestracja sklepu, panel, statystyki) na osobny prefix /admin/*
+# z osobnym CORS-em ograniczonym do https://latwyzwrot.pl + https://app.latwyzwrot.pl.
+# ─────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["X-Request-ID"],
+    max_age=86400,
 )
 
 WIDGET_DIR = os.path.dirname(__file__)

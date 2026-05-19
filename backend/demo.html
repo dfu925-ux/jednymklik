@@ -202,8 +202,8 @@
         <div class="widget-slot" id="jednymklik-widget"></div>
 
         <div class="demo-note">
-            ℹ️ To jest strona demonstracyjna. Widget łączy się z <code>localhost:8000</code>.
-            Upewnij się, że backend działa: <code>uvicorn main:app --reload</code>
+            ℹ️ To jest strona demonstracyjna. Widget łączy się z produkcyjnym backendem
+            <code>jednymklik-production.up.railway.app</code> (online 24/7).
         </div>
     </div>
 
@@ -214,7 +214,7 @@
             JednymKlik · konsola debugowania
         </div>
         <div class="debug-log" id="debug-log">
-            <div class="log-line log-info">▶ Ładowanie widgetu z localhost:8000...</div>
+            <div class="log-line log-info">▶ Ładowanie widgetu z jednymklik-production.up.railway.app...</div>
         </div>
     </div>
 </div>
@@ -281,12 +281,12 @@
         try {
             const r = await fetch('https://jednymklik-production.up.railway.app/health');
             if (r.ok) {
-                addLog('✅ Backend online (localhost:8000)', 'normal');
+                addLog('✅ Backend online (jednymklik-production.up.railway.app)', 'normal');
             } else {
                 addLog('⚠️ Backend odpowiedział: ' + r.status, 'error');
             }
         } catch(e) {
-            addLog('❌ Backend niedostępny. Uruchom: uvicorn main:app --reload', 'error');
+            addLog('❌ Backend niedostępny. Sprawdź status Railway: status.railway.app', 'error');
         }
     });
 </script>
