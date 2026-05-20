@@ -4,7 +4,7 @@
  * ║         Embed na stronę sklepu — art. 11a Dyrektywy UE      ║
  * ║                                                             ║
  * ║  Użycie:                                                    ║
- * ║  <script src="https://jednymklik-production.up.railway.app/widget.js" ║
+ * ║  <script src="https://api.latwyzwrot.pl/widget.js" ║
  * ║          data-shop-id="TWOJ_SHOP_ID"                        ║
  * ║          data-shop-token="TWOJ_TOKEN"                       ║
  * ║          data-order-id="NUMER_ZAMOWIENIA"                   ║
@@ -21,7 +21,7 @@
     // ─────────────────────────────────────────────
     // KONFIGURACJA
     // ─────────────────────────────────────────────
-    const API_BASE = 'https://api.latwyzwrot.pl';
+    const API_BASE = 'https://jednymklik-production.up.railway.app';
 
     const script = document.currentScript;
     const CONFIG = {
