@@ -21,7 +21,7 @@
     // ─────────────────────────────────────────────
     // KONFIGURACJA
     // ─────────────────────────────────────────────
-    const API_BASE = 'https://jednymklik-production.up.railway.app';
+    const API_BASE = 'https://api.latwyzwrot.pl';
 
     const script = document.currentScript;
     const CONFIG = {

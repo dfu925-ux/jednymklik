@@ -203,7 +203,7 @@
 
         <div class="demo-note">
             ℹ️ To jest strona demonstracyjna. Widget łączy się z produkcyjnym backendem
-            <code>jednymklik-production.up.railway.app</code> (online 24/7).
+            <code>api.latwyzwrot.pl</code> (online 24/7).
         </div>
     </div>
 
@@ -214,7 +214,7 @@
             JednymKlik · konsola debugowania
         </div>
         <div class="debug-log" id="debug-log">
-            <div class="log-line log-info">▶ Ładowanie widgetu z jednymklik-production.up.railway.app...</div>
+            <div class="log-line log-info">▶ Ładowanie widgetu z api.latwyzwrot.pl...</div>
         </div>
     </div>
 </div>
@@ -222,13 +222,13 @@
 <!--
     ╔══════════════════════════════════════════════╗
     ║  WIDGET — ładowany z lokalnego backendu      ║
-    ║  API_BASE = https://jednymklik-production.up.railway.app            ║
+    ║  API_BASE = https://api.latwyzwrot.pl            ║
     ╚══════════════════════════════════════════════╝
 -->
 <script
-    src="https://jednymklik-production.up.railway.app/widget.js"
+    src="https://api.latwyzwrot.pl/widget.js"
     data-shop-id="TEST-SHOP-001"
-    data-shop-token="64be910c-4c6f-4725-88c3-00d2367de33b"
+    data-shop-token="TEST-TOKEN-ABC123"
     data-order-id="TEST-2026-0516"
     data-customer-email="klient@test.pl"
     data-customer-name="Jan Kowalski"
@@ -279,9 +279,9 @@
     // Sprawdź backend po załadowaniu
     window.addEventListener('load', async function() {
         try {
-            const r = await fetch('https://jednymklik-production.up.railway.app/health');
+            const r = await fetch('https://api.latwyzwrot.pl/health');
             if (r.ok) {
-                addLog('✅ Backend online (jednymklik-production.up.railway.app)', 'normal');
+                addLog('✅ Backend online (api.latwyzwrot.pl)', 'normal');
             } else {
                 addLog('⚠️ Backend odpowiedział: ' + r.status, 'error');
             }

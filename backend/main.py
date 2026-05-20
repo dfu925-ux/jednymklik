@@ -132,7 +132,7 @@ SMTP_HOST = os.getenv("SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASS = os.getenv("SMTP_PASS", "")
-FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@jednymklik.pl")
+FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@latwyzwrot.pl")
 
 def send_email(to_email: str, subject: str, body_html: str) -> bool:
     try:
@@ -255,7 +255,7 @@ async def confirm_withdrawal(data: WithdrawalConfirm, x_shop_token: Optional[str
         <p><strong>Termin zwrotu towaru:</strong> {withdrawal['deadline_return']}</p>
         <p><strong>Powód:</strong> {data.reason or 'Nie podano'}</p>
         <hr>
-        <p style="font-size:12px;color:#666">JednymKlik.pl — zgodność z art. 11a Dyrektywy UE 2023/2673</p>
+        <p style="font-size:12px;color:#666">ŁatwyZwrot.pl — zgodność z art. 11a Dyrektywy UE 2023/2673</p>
         """
         email_sent = send_email(withdrawal["customer_email"], subject, body)
 
@@ -301,6 +301,7 @@ async def register_shop(data: ShopRegister):
         "owner_name": data.owner_name,
         "plan": data.plan,
         "active": True,
+        "shop_token": shop_token,
     }
     try:
         inserted = await sb_insert("shops", record)
@@ -312,7 +313,7 @@ async def register_shop(data: ShopRegister):
         "success": True,
         "shop_id": shop_id,
         "shop_token": shop_token,
-        "widget_snippet": f'<script src="https://jednymklik-production.up.railway.app/widget.js" data-shop-id="{shop_id}" data-shop-token="{shop_token}"></script>',
+        "widget_snippet": f'<script src="https://api.latwyzwrot.pl/widget.js" data-shop-id="{shop_id}" data-shop-token="{shop_token}"></script>',
     }
 
 @app.get("/api/v1/withdrawal/{withdrawal_id}/status")
