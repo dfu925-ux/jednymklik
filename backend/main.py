@@ -19,11 +19,14 @@ import uuid
 import httpx
 import smtplib
 import logging
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("jednymklik")
+_email_executor = ThreadPoolExecutor(max_workers=2)
 
 app = FastAPI(title="JednymKlik.pl API", version="1.0.0")
 
@@ -86,7 +89,7 @@ async def sb_insert(table: str, data: dict):
         "Content-Type": "application/json",
         "Prefer": "return=representation",
     }
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=8.0) as client:
         r = await client.post(url, json=data, headers=headers)
         r.raise_for_status()
         return r.json()[0] if r.json() else {}
@@ -100,7 +103,7 @@ async def sb_select(table: str, filters: dict, limit: int = 50):
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
     }
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=8.0) as client:
         r = await client.get(url, params=params, headers=headers)
         r.raise_for_status()
         return r.json()
@@ -120,7 +123,7 @@ async def sb_update(table: str, filters: dict, data: dict):
         "Content-Type": "application/json",
         "Prefer": "return=representation",
     }
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=8.0) as client:
         r = await client.patch(url, json=data, params=params, headers=headers)
         r.raise_for_status()
         return r.json()
@@ -257,7 +260,10 @@ async def confirm_withdrawal(data: WithdrawalConfirm, x_shop_token: Optional[str
         <hr>
         <p style="font-size:12px;color:#666">ŁatwyZwrot.pl — zgodność z art. 11a Dyrektywy UE 2023/2673</p>
         """
-        email_sent = send_email(withdrawal["customer_email"], subject, body)
+        # Email w tle — nie blokuje odpowiedzi
+        loop = asyncio.get_event_loop()
+        loop.run_in_executor(_email_executor, send_email, withdrawal["customer_email"], subject, body)
+        email_sent = True  # optymistycznie True, błędy logowane w send_email
 
     try:
         await sb_update("withdrawals", {"id": data.withdrawal_id}, {
