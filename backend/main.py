@@ -175,6 +175,11 @@ class WaitlistEntry(BaseModel):
     email: EmailStr
 
 # ─────────────────────────────────────────────
+# STRIPE
+# ─────────────────────────────────────────────
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+
+# ─────────────────────────────────────────────
 # ENDPOINTY
 # ─────────────────────────────────────────────
 @app.get("/")
@@ -318,6 +323,96 @@ async def register_shop(data: ShopRegister):
         "shop_token": shop_token,
         "widget_snippet": f'<script src="https://api.latwyzwrot.pl/widget.js" data-shop-id="{shop_id}" data-shop-token="{shop_token}"></script>',
     }
+
+@app.post("/api/v1/webhook/stripe")
+async def stripe_webhook(request: Request):
+    payload = await request.body()
+    sig = request.headers.get("stripe-signature", "")
+
+    # Weryfikacja podpisu Stripe
+    if STRIPE_WEBHOOK_SECRET:
+        import hmac, hashlib, time
+        try:
+            parts = {k: v for k, v in (p.split("=", 1) for p in sig.split(","))}
+            ts = parts.get("t", "")
+            v1 = parts.get("v1", "")
+            signed = f"{ts}.{payload.decode()}"
+            expected = hmac.new(STRIPE_WEBHOOK_SECRET.encode(), signed.encode(), hashlib.sha256).hexdigest()
+            if not hmac.compare_digest(expected, v1):
+                raise HTTPException(status_code=400, detail="Invalid signature")
+        except Exception as e:
+            log.error(f"Webhook signature error: {e}")
+            raise HTTPException(status_code=400, detail="Invalid signature")
+
+    try:
+        event = (await request.json()) if not payload else __import__("json").loads(payload)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    event_type = event.get("type", "")
+    log.info(f"Stripe webhook: {event_type}")
+
+    if event_type == "customer.subscription.created":
+        sub = event.get("data", {}).get("object", {})
+        customer_id = sub.get("customer")
+        plan_name = "starter"
+
+        # Pobierz email klienta z Stripe
+        customer_email = ""
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                stripe_secret = os.getenv("STRIPE_SECRET_KEY", "")
+                r = await client.get(
+                    f"https://api.stripe.com/v1/customers/{customer_id}",
+                    auth=(stripe_secret, "")
+                )
+                customer_data = r.json()
+                customer_email = customer_data.get("email", "")
+        except Exception as e:
+            log.error(f"Stripe customer fetch error: {e}")
+
+        if not customer_email:
+            log.error("Brak emaila klienta")
+            return {"received": True}
+
+        # Utwórz sklep w Supabase
+        shop_token = str(uuid.uuid4())
+        shop_id = str(uuid.uuid4())
+        try:
+            await sb_insert("shops", {
+                "shop_id": shop_id,
+                "shop_name": customer_email,
+                "shop_url": "",
+                "owner_email": customer_email,
+                "plan": plan_name,
+                "active": True,
+                "shop_token": shop_token,
+                "stripe_customer_id": customer_id,
+            })
+        except Exception as e:
+            log.error(f"Supabase shop insert error: {e}")
+            return {"received": True}
+
+        # Wyślij email z tokenem
+        snippet = f'<script src="https://jednymklik-production.up.railway.app/widget.js" data-shop-id="{shop_id}" data-shop-token="{shop_token}"></script>'
+        body = f"""
+        <h2>Witaj w ŁatwyZwrot.pl!</h2>
+        <p>Twoje konto jest aktywne. Wklej poniższy kod przed tagiem &lt;/body&gt; w swoim sklepie:</p>
+        <pre style="background:#f5f5f5;padding:16px;border-radius:8px;font-size:13px;overflow-x:auto">{snippet}</pre>
+        <p>Token Twojego sklepu: <strong>{shop_token}</strong></p>
+        <p>Jeśli masz pytania — napisz na kontakt@latwyzwrot.pl</p>
+        <hr>
+        <p style="font-size:12px;color:#666">ŁatwyZwrot.pl — zgodność z art. 11a Dyrektywy UE 2023/2673</p>
+        """
+        asyncio.create_task(send_email(
+            customer_email,
+            "Twój widget ŁatwyZwrot.pl jest gotowy — wklej 1 linijkę kodu",
+            body
+        ))
+        log.info(f"Onboarding complete: {customer_email} | shop_id: {shop_id}")
+
+    return {"received": True}
+
 
 @app.post("/api/v1/waitlist")
 async def join_waitlist(data: WaitlistEntry):
