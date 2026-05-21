@@ -17,16 +17,14 @@ from typing import Optional
 import os
 import uuid
 import httpx
-import smtplib
 import logging
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+
+
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("jednymklik")
-_email_executor = ThreadPoolExecutor(max_workers=2)
+
 
 app = FastAPI(title="JednymKlik.pl API", version="1.0.0")
 
@@ -129,28 +127,26 @@ async def sb_update(table: str, filters: dict, data: dict):
         return r.json()
 
 # ─────────────────────────────────────────────
-# EMAIL
+# RESEND EMAIL
 # ─────────────────────────────────────────────
-SMTP_HOST = os.getenv("SMTP_HOST", "")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "")
-SMTP_PASS = os.getenv("SMTP_PASS", "")
-FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@latwyzwrot.pl")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+FROM_EMAIL = os.getenv("FROM_EMAIL", "kontakt@latwyzwrot.pl")
 
-def send_email(to_email: str, subject: str, body_html: str) -> bool:
+async def send_email(to_email: str, subject: str, body_html: str) -> bool:
+    if not RESEND_API_KEY:
+        log.warning("Brak RESEND_API_KEY")
+        return False
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = FROM_EMAIL
-        msg["To"] = to_email
-        msg.attach(MIMEText(body_html, "html"))
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.starttls()
-            server.login(SMTP_USER, SMTP_PASS)
-            server.sendmail(FROM_EMAIL, to_email, msg.as_string())
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            r = await client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                json={"from": f"ŁatwyZwrot <onboarding@resend.dev>", "to": [to_email], "subject": subject, "html": body_html}
+            )
+            r.raise_for_status()
         return True
     except Exception as e:
-        log.error(f"Email error: {e}")
+        log.error(f"Resend error: {e}")
         return False
 
 # ─────────────────────────────────────────────
@@ -251,7 +247,7 @@ async def confirm_withdrawal(data: WithdrawalConfirm, x_shop_token: Optional[str
     timestamp_confirmed = datetime.utcnow().isoformat()
 
     email_sent = False
-    if withdrawal.get("customer_email") and SMTP_HOST:
+    if withdrawal.get("customer_email") and RESEND_API_KEY:
         subject = f"Potwierdzenie odstąpienia od umowy — zamówienie {withdrawal['order_id']}"
         body = f"""
         <h2>Potwierdzenie odstąpienia od umowy</h2>
@@ -263,10 +259,8 @@ async def confirm_withdrawal(data: WithdrawalConfirm, x_shop_token: Optional[str
         <hr>
         <p style="font-size:12px;color:#666">ŁatwyZwrot.pl — zgodność z art. 11a Dyrektywy UE 2023/2673</p>
         """
-        # Email w tle — nie blokuje odpowiedzi
-        loop = asyncio.get_event_loop()
-        loop.run_in_executor(_email_executor, send_email, withdrawal["customer_email"], subject, body)
-        email_sent = True  # optymistycznie True, błędy logowane w send_email
+        asyncio.create_task(send_email(withdrawal["customer_email"], subject, body))
+        email_sent = True
 
     try:
         await sb_update("withdrawals", {"id": data.withdrawal_id}, {
@@ -337,15 +331,11 @@ async def join_waitlist(data: WaitlistEntry):
         raise HTTPException(status_code=500, detail="Błąd zapisu")
 
     # Powiadomienie dla właściciela
-    if SMTP_HOST:
-        loop = asyncio.get_event_loop()
-        loop.run_in_executor(
-            _email_executor,
-            send_email,
-            "kontakt@latwyzwrot.pl",
-            f"[ŁatwyZwrot] Nowy zapis: {data.email}",
-            f"<p>Nowy email na liście oczekujących: <strong>{data.email}</strong></p>"
-        )
+    asyncio.create_task(send_email(
+        "kontakt@latwyzwrot.pl",
+        f"[ŁatwyZwrot] Nowy zapis: {data.email}",
+        f"<p>Nowy email na liście oczekujących: <strong>{data.email}</strong></p>"
+    ))
 
     log.info(f"Waitlist: {data.email}")
     return {"success": True, "message": "Zapisano! Powiadomimy Cię przy starcie."}
