@@ -141,7 +141,7 @@ async def send_email(to_email: str, subject: str, body_html: str) -> bool:
             r = await client.post(
                 "https://api.resend.com/emails",
                 headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
-                json={"from": f"ŁatwyZwrot <onboarding@resend.dev>", "to": [to_email], "subject": subject, "html": body_html}
+                json={"from": "ŁatwyZwrot <kontakt@latwyzwrot.pl>", "to": [to_email], "subject": subject, "html": body_html}
             )
             r.raise_for_status()
         return True
