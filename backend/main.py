@@ -411,6 +411,34 @@ async def stripe_webhook(request: Request):
         ))
         log.info(f"Onboarding complete: {customer_email} | shop_id: {shop_id}")
 
+    elif event_type == "customer.subscription.deleted":
+        sub = event.get("data", {}).get("object", {})
+        customer_id = sub.get("customer")
+
+        # Dezaktywuj sklep w Supabase
+        try:
+            shop = await sb_select_one("shops", {"stripe_customer_id": customer_id})
+            if shop:
+                await sb_update("shops", {"stripe_customer_id": customer_id}, {"active": False})
+                log.info(f"Shop deactivated: {customer_id}")
+
+                # Powiadom klienta
+                owner_email = shop.get("owner_email", "")
+                if owner_email:
+                    asyncio.create_task(send_email(
+                        owner_email,
+                        "Twoja subskrypcja ŁatwyZwrot.pl wygasła",
+                        """
+                        <h2>Subskrypcja wygasła</h2>
+                        <p>Twój widget ŁatwyZwrot.pl został dezaktywowany.</p>
+                        <p>Aby wznowić dostęp, odnów subskrypcję na <a href="https://latwyzwrot.pl/#cennik">latwyzwrot.pl</a>.</p>
+                        <hr>
+                        <p style="font-size:12px;color:#666">ŁatwyZwrot.pl — zgodność z art. 11a Dyrektywy UE 2023/2673</p>
+                        """
+                    ))
+        except Exception as e:
+            log.error(f"Subscription deleted error: {e}")
+
     return {"received": True}
 
 
