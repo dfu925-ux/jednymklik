@@ -201,6 +201,8 @@ async def initiate_withdrawal(data: WithdrawalInitiate, x_shop_token: Optional[s
         raise HTTPException(status_code=500, detail="Błąd odczytu z bazy")
     if not shop:
         raise HTTPException(status_code=401, detail="Nieprawidłowy token sklepu")
+    if not shop.get("active", True):
+        raise HTTPException(status_code=403, detail="Konto nieaktywne")
 
     withdrawal_id = str(uuid.uuid4())
     deadline = (datetime.utcnow() + timedelta(days=14)).strftime("%Y-%m-%d")
