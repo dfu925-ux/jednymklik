@@ -175,6 +175,9 @@ class ShopRegister(BaseModel):
     owner_name: Optional[str] = None
     plan: Optional[str] = "free"
 
+class WaitlistEntry(BaseModel):
+    email: EmailStr
+
 # ─────────────────────────────────────────────
 # ENDPOINTY
 # ─────────────────────────────────────────────
@@ -321,6 +324,32 @@ async def register_shop(data: ShopRegister):
         "shop_token": shop_token,
         "widget_snippet": f'<script src="https://api.latwyzwrot.pl/widget.js" data-shop-id="{shop_id}" data-shop-token="{shop_token}"></script>',
     }
+
+@app.post("/api/v1/waitlist")
+async def join_waitlist(data: WaitlistEntry):
+    try:
+        await sb_insert("waitlist", {"email": data.email})
+    except Exception as e:
+        err = str(e)
+        if "duplicate" in err.lower() or "unique" in err.lower():
+            return {"success": True, "message": "Już jesteś na liście."}
+        log.error(f"Waitlist error: {e}")
+        raise HTTPException(status_code=500, detail="Błąd zapisu")
+
+    # Powiadomienie dla właściciela
+    if SMTP_HOST:
+        loop = asyncio.get_event_loop()
+        loop.run_in_executor(
+            _email_executor,
+            send_email,
+            "kontakt@latwyzwrot.pl",
+            f"[ŁatwyZwrot] Nowy zapis: {data.email}",
+            f"<p>Nowy email na liście oczekujących: <strong>{data.email}</strong></p>"
+        )
+
+    log.info(f"Waitlist: {data.email}")
+    return {"success": True, "message": "Zapisano! Powiadomimy Cię przy starcie."}
+
 
 @app.get("/api/v1/withdrawal/{withdrawal_id}/status")
 async def get_withdrawal_status(withdrawal_id: str):
