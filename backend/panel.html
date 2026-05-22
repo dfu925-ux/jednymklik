@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel klienta - ŁatwyZwrot.pl</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <style>
+    body { background-color: #0f172a; }
+    .card { transition: all 0.3s ease; }
+    .card:hover { transform: translateY(-3px); }
+    .nav-item { transition: all 0.2s; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .token-masked { font-family: monospace; letter-spacing: 0.05em; }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen">
+
+<!-- LOGIN -->
+<div id="login-screen" class="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-950 to-slate-900">
+  <div class="bg-slate-900 rounded-3xl p-10 max-w-md w-full border border-slate-800 shadow-2xl">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-12 h-12 bg-emerald-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg">Ł</div>
+      <div>
+        <span class="text-2xl font-bold tracking-tight">ŁatwyZwrot<span class="text-emerald-500">.pl</span></span>
+        <p class="text-xs text-slate-500">Panel klienta</p>
+      </div>
+    </div>
+    <h1 class="text-2xl font-bold mb-2">Zaloguj się</h1>
+    <p class="text-slate-400 text-sm mb-8">Użyj danych z emaila powitalnego który otrzymałeś po zakupie.</p>
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-slate-300 mb-2">Adres email</label>
+      <input id="login-email" type="email" placeholder="twoj@sklep.pl"
+        class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors">
+    </div>
+    <div class="mb-6">
+      <label class="block text-sm font-medium text-slate-300 mb-2">Token sklepu</label>
+      <input id="login-token" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+        class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 text-xs font-mono focus:outline-none focus:border-emerald-500 transition-colors">
+      <p class="text-xs text-slate-500 mt-2">Token znajdziesz w emailu powitalnym od ŁatwyZwrot.pl</p>
+    </div>
+    <button onclick="doLogin()" id="login-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 py-4 rounded-3xl font-semibold text-white transition-colors flex items-center justify-center gap-2">
+      Zaloguj się →
+    </button>
+    <div id="login-error" class="hidden mt-4 bg-red-900/30 border border-red-700 text-red-400 rounded-2xl px-4 py-3 text-sm">
+      Nieprawidłowy email lub token. Sprawdź dane z emaila powitalnego.
+    </div>
+    <p class="text-center text-xs text-slate-500 mt-6">Problemy z logowaniem? <a href="mailto:kontakt@latwyzwrot.pl" class="text-emerald-400 hover:underline">kontakt@latwyzwrot.pl</a></p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden h-screen overflow-hidden" style="display:none">
+<div class="flex h-screen overflow-hidden">
+
+  <!-- Sidebar -->
+  <div class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col flex-shrink-0">
+    <div class="p-5 border-b border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">Ł</div>
+        <div>
+          <span class="text-lg font-bold tracking-tight">ŁatwyZwrot<span class="text-emerald-500">.pl</span></span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+      <a href="#" onclick="showSection('dashboard',this)" class="nav-item flex items-center gap-3 px-4 py-3 bg-emerald-600 text-white rounded-2xl font-medium text-sm">
+        <i class="fa-solid fa-house w-4"></i> Dashboard
+      </a>
+      <a href="#" onclick="showSection('widget',this)" class="nav-item flex items-center gap-3 px-4 py-3 hover:bg-slate-800 rounded-2xl text-slate-300 text-sm">
+        <i class="fa-solid fa-code w-4"></i> Widget & Kod
+      </a>
+      <a href="#" onclick="showSection('odstapienia',this)" class="nav-item flex items-center gap-3 px-4 py-3 hover:bg-slate-800 rounded-2xl text-slate-300 text-sm">
+        <i class="fa-solid fa-list-check w-4"></i> Odstąpienia
+      </a>
+      <a href="#" onclick="showSection('certyfikat',this)" class="nav-item flex items-center gap-3 px-4 py-3 hover:bg-slate-800 rounded-2xl text-slate-300 text-sm">
+        <i class="fa-solid fa-shield-halved w-4"></i> Certyfikat
+      </a>
+      <a href="#" onclick="showSection('rozliczenia',this)" class="nav-item flex items-center gap-3 px-4 py-3 hover:bg-slate-800 rounded-2xl text-slate-300 text-sm">
+        <i class="fa-solid fa-credit-card w-4"></i> Rozliczenia
+      </a>
+    </nav>
+
+    <div class="p-3 border-t border-slate-800">
+      <div class="flex items-center gap-3 px-3 py-3 bg-slate-800 rounded-2xl mb-2">
+        <div class="w-8 h-8 bg-emerald-700 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0" id="sidebar-avatar">Ł</div>
+        <div class="text-xs overflow-hidden">
+          <div class="font-semibold truncate" id="sidebar-shop">—</div>
+          <div class="text-slate-400 truncate" id="sidebar-email-small">—</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 px-3 mb-2">
+        <span class="bg-emerald-900/50 text-emerald-400 border border-emerald-700 text-xs px-2 py-0.5 rounded-full font-medium" id="sidebar-plan-badge">Starter</span>
+        <span class="text-xs text-slate-500" id="sidebar-usage">0/15 zwrotów</span>
+      </div>
+      <button onclick="doLogout()" class="w-full text-slate-500 hover:text-slate-300 text-xs py-2 transition-colors flex items-center justify-center gap-1">
+        <i class="fa-solid fa-right-from-bracket"></i> Wyloguj się
+      </button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="flex-1 overflow-auto flex flex-col min-w-0">
+
+    <!-- Topbar -->
+    <div class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center sticky top-0 z-10 flex-shrink-0">
+      <div>
+        <h1 id="page-title" class="text-xl font-semibold">Dashboard</h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-2 text-emerald-400 text-xs font-medium bg-emerald-900/30 border border-emerald-800 px-3 py-1.5 rounded-full">
+          <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+          Zgodny z Art. 11a ✓
+        </div>
+        <div class="text-xs text-slate-400 hidden md:block" id="topbar-shop">—</div>
+        <button onclick="copySnippetQuick()" id="btn-copy-top"
+          class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-xl font-medium flex items-center gap-2 text-sm transition-colors">
+          <i class="fa-solid fa-copy"></i> <span class="hidden sm:inline">Kopiuj snippet</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="p-6 flex-1 overflow-auto" id="content">
+
+      <!-- DASHBOARD -->
+      <div id="dashboard" class="section active">
+        <div class="mb-6">
+          <h2 class="text-xl font-semibold">Witaj w panelu, <span class="text-emerald-400" id="welcome-shop">—</span> 👋</h2>
+          <p class="text-slate-400 text-sm mt-1" id="welcome-email">—</p>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="bg-slate-900 rounded-2xl p-5 card border border-slate-800">
+            <p class="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2">Odstąpień w tym miesiącu</p>
+            <p class="text-4xl font-bold" id="kpi-total">0</p>
+          </div>
+          <div class="bg-slate-900 rounded-2xl p-5 card border border-slate-800">
+            <p class="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2">Limit planu</p>
+            <p class="text-4xl font-bold"><span id="kpi-used">0</span><span class="text-lg font-normal text-slate-500">/<span id="kpi-limit">15</span></span></p>
+          </div>
+          <div class="bg-slate-900 rounded-2xl p-5 card border border-slate-800">
+            <p class="text-amber-400 text-xs font-medium uppercase tracking-wide mb-2">Dni do Art. 11a</p>
+            <p class="text-4xl font-bold text-amber-400" id="kpi-days">28</p>
+            <p class="text-xs text-slate-500 mt-1">do obowiązku Art. 11a</p>
+          </div>
+          <div class="bg-emerald-900/30 border border-emerald-700 rounded-2xl p-5 card">
+            <p class="text-emerald-400 text-xs font-medium uppercase tracking-wide mb-2">Status</p>
+            <p class="text-lg font-semibold">✅ Pełna zgodność</p>
+            <p class="text-xs text-slate-500 mt-1">Widget aktywny</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800">
+            <h3 class="font-semibold mb-3 text-sm uppercase tracking-wide text-slate-400">Twój kod widgetu</h3>
+            <div class="bg-slate-950 p-4 rounded-xl font-mono text-xs text-emerald-400 mb-4 overflow-x-auto whitespace-nowrap border border-slate-800" id="snippet-dash">
+              Ładowanie...
+            </div>
+            <button onclick="copySnippetQuick()" id="btn-copy-dash"
+              class="w-full bg-emerald-600 hover:bg-emerald-700 py-3 rounded-xl font-semibold transition-colors text-sm flex items-center justify-center gap-2">
+              <i class="fa-solid fa-copy"></i> Skopiuj kod do schowka
+            </button>
+          </div>
+
+          <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800">
+            <div class="flex justify-between items-center mb-3">
+              <h3 class="font-semibold text-sm uppercase tracking-wide text-slate-400">Ostatnie odstąpienia</h3>
+              <button onclick="showSection('odstapienia', document.querySelectorAll('.nav-item')[2])" class="text-emerald-400 text-xs hover:underline">Zobacz wszystkie →</button>
+            </div>
+            <div id="dashboard-recent">
+              <div class="text-center py-10 text-slate-600">
+                <div class="text-5xl mb-3">📭</div>
+                <div class="text-sm font-medium text-slate-500">Widget jest aktywny i gotowy</div>
+                <div class="text-xs text-slate-600 mt-1">Pierwsze odstąpienie pojawi się tutaj automatycznie</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WIDGET -->
+      <div id="widget" class="section">
+        <div class="bg-slate-900 rounded-2xl p-6 mb-5 border border-slate-800">
+          <h3 class="font-semibold text-base mb-1">Kod widgetu</h3>
+          <p class="text-slate-400 text-sm mb-4">Wklej przed tagiem &lt;/body&gt; w każdej stronie sklepu</p>
+
+          <div class="bg-slate-950 p-4 rounded-xl font-mono text-xs text-emerald-400 mb-4 overflow-x-auto border border-slate-800 relative" id="snippet-full">Ładowanie...</div>
+
+          <div class="flex gap-3 mb-5">
+            <button onclick="copySnippetFull()" id="btn-copy-full"
+              class="flex-1 bg-emerald-600 hover:bg-emerald-700 py-3 rounded-xl font-semibold transition-colors text-sm flex items-center justify-center gap-2">
+              <i class="fa-solid fa-copy"></i> Kopiuj kod
+            </button>
+            <button onclick="toggleToken()" id="btn-token"
+              class="px-4 border border-slate-700 hover:border-slate-500 text-slate-400 hover:text-slate-200 rounded-xl text-sm transition-colors">
+              <i class="fa-solid fa-eye"></i> Token
+            </button>
+          </div>
+
+          <!-- Live preview -->
+          <div class="border border-slate-700 rounded-xl p-4">
+            <p class="text-xs text-slate-500 mb-3 uppercase tracking-wide font-medium">Podgląd przycisku w sklepie</p>
+            <div class="bg-white rounded-lg p-6 flex items-center justify-center">
+              <button style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:12px 20px;font-size:15px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:sans-serif">
+                ↩ Odstąp od umowy
+              </button>
+            </div>
+            <p class="text-xs text-slate-600 mt-2 text-center">Tak wygląda przycisk na stronie Twojego sklepu</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800">
+          <h3 class="font-semibold text-base mb-4">Instrukcja wdrożenia</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm font-semibold text-emerald-400 mb-3">WordPress / WooCommerce</p>
+              <ol class="space-y-2 text-sm text-slate-300">
+                <li class="flex gap-2"><span class="w-5 h-5 bg-emerald-600/20 text-emerald-400 rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5">1</span>Zainstaluj wtyczkę <strong class="text-white">WPCode</strong></li>
+                <li class="flex gap-2"><span class="w-5 h-5 bg-emerald-600/20 text-emerald-400 rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5">2</span>Add Snippet → HTML Snippet</li>
+                <li class="flex gap-2"><span class="w-5 h-5 bg-emerald-600/20 text-emerald-400 rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5">3</span>Wklej kod, Location: Footer</li>
+                <li class="flex gap-2"><span class="w-5 h-5 bg-emerald-600/20 text-emerald-400 rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5">4</span>Status: Active → Zapisz</li>
+              </ol>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-emerald-400 mb-3">Shoper / IdoSell / Sky-Shop</p>
+              <ol class="space-y-2 text-sm text-slate-300">
+                <li class="flex gap-2"><span class="w-5 h-5 bg-emerald-600/20 text-emerald-400 rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5">1</span>Panel admina → Wygląd sklepu</li>
+                <li class="flex gap-2"><span class="w-5 h-5 bg-emerald-600/20 text-emerald-400 rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5">2</span>Edycja szablonu / HTML stopki</li>
+                <li class="flex gap-2"><span class="w-5 h-5 bg-emerald-600/20 text-emerald-400 rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5">3</span>Wklej kod przed &lt;/body&gt;</li>
+                <li class="flex gap-2"><span class="w-5 h-5 bg-emerald-600/20 text-emerald-400 rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5">4</span>Zapisz i wyczyść cache</li>
+              </ol>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 mt-4 pt-4 border-t border-slate-800">Widget działa na każdej stronie WWW — WordPress, WooCommerce, Shoper, IdoSell, PrestaShop, Magento, własny HTML.</p>
+        </div>
+      </div>
+
+      <!-- ODSTĄPIENIA -->
+      <div id="odstapienia" class="section">
+        <div class="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800">
+          <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+            <div>
+              <h3 class="font-semibold">Wszystkie odstąpienia</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Audit trail zgodny z Art. 11a</p>
+            </div>
+            <button onclick="exportCSV()" class="border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-emerald-400 px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-2">
+              <i class="fa-solid fa-download"></i> Eksport CSV
+            </button>
+          </div>
+          <div id="withdrawals-table" class="p-8 text-center text-slate-500">
+            <div class="text-5xl mb-3">📭</div>
+            <div class="text-sm font-medium text-slate-500">Brak odstąpień</div>
+            <div class="text-xs text-slate-600 mt-1">Widget aktywny — pierwsze odstąpienie pojawi się tutaj automatycznie</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CERTYFIKAT -->
+      <div id="certyfikat" class="section">
+        <div class="bg-slate-900 rounded-2xl p-6 max-w-2xl border border-slate-800">
+          <h3 class="font-semibold text-base mb-5">Certyfikat Zgodności z Art. 11a Dyrektywy UE 2023/2673</h3>
+          <div class="border-2 border-emerald-700 rounded-2xl p-6 bg-emerald-900/20 mb-5 text-center">
+            <div class="text-5xl mb-3">🛡️</div>
+            <h2 class="text-xl font-bold text-emerald-400 mb-1">Certyfikat Zgodności</h2>
+            <p class="text-slate-400 text-xs mb-5">Dyrektywa UE 2023/2673 — Art. 11a</p>
+            <div class="grid grid-cols-2 gap-3 text-left">
+              <div class="bg-slate-900 rounded-xl p-3">
+                <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Sklep</div>
+                <div class="font-semibold text-sm" id="cert-shop">—</div>
+              </div>
+              <div class="bg-slate-900 rounded-xl p-3">
+                <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Status</div>
+                <div class="font-semibold text-sm text-emerald-400">✓ Zgodny</div>
+              </div>
+              <div class="bg-slate-900 rounded-xl p-3">
+                <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Data wystawienia</div>
+                <div class="font-semibold text-sm" id="cert-date">—</div>
+              </div>
+              <div class="bg-slate-900 rounded-xl p-3">
+                <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Ważny do</div>
+                <div class="font-semibold text-sm">19 czerwca 2026</div>
+              </div>
+            </div>
+          </div>
+          <button onclick="downloadCert()" class="bg-emerald-600 hover:bg-emerald-700 px-6 py-3.5 rounded-2xl font-semibold flex items-center gap-3 transition-colors text-sm">
+            <i class="fa-solid fa-download"></i> Pobierz certyfikat PDF
+          </button>
+          <p class="text-slate-500 text-xs mt-3">Certyfikat jest generowany automatycznie i aktualizowany na bieżąco.</p>
+          <p class="text-slate-500 text-xs mt-1">Ostatnia aktualizacja: <span id="cert-updated">—</span></p>
+        </div>
+      </div>
+
+      <!-- ROZLICZENIA -->
+      <div id="rozliczenia" class="section">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+          <div class="bg-slate-900 rounded-2xl p-5 card border border-slate-800">
+            <p class="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2">Aktualny plan</p>
+            <p class="text-2xl font-bold" id="billing-plan-card">Starter</p>
+            <span class="text-xs bg-emerald-900/50 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full mt-2 inline-block">✓ Aktywny</span>
+          </div>
+          <div class="bg-slate-900 rounded-2xl p-5 card border border-slate-800">
+            <p class="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2">Miesięczna opłata</p>
+            <p class="text-2xl font-bold text-emerald-400" id="billing-price-card">19 zł</p>
+            <p class="text-xs text-slate-500 mt-1">+ VAT</p>
+          </div>
+          <div class="bg-slate-900 rounded-2xl p-5 card border border-slate-800">
+            <p class="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2">Wykorzystanie zwrotów</p>
+            <p class="text-2xl font-bold"><span id="billing-used">0</span><span class="text-base font-normal text-slate-500">/<span id="billing-limit">15</span></span></p>
+            <p class="text-xs text-slate-500 mt-1">w bieżącym miesiącu</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 rounded-2xl p-6 max-w-xl border border-slate-800">
+          <h3 class="font-semibold mb-4">Szczegóły subskrypcji</h3>
+          <div class="space-y-0">
+            <div class="flex justify-between py-3 border-b border-slate-800 text-sm">
+              <span class="text-slate-400">Email konta</span>
+              <span id="billing-email" class="font-medium">—</span>
+            </div>
+            <div class="flex justify-between py-3 border-b border-slate-800 text-sm">
+              <span class="text-slate-400">Plan</span>
+              <span id="billing-plan" class="font-medium">Starter</span>
+            </div>
+            <div class="flex justify-between py-3 border-b border-slate-800 text-sm">
+              <span class="text-slate-400">Status</span>
+              <span class="text-emerald-400 font-semibold">✓ Aktywny</span>
+            </div>
+            <div class="flex justify-between py-3 border-b border-slate-800 text-sm">
+              <span class="text-slate-400">Zarządzaj subskrypcją</span>
+              <a href="https://billing.stripe.com" target="_blank" class="text-emerald-400 hover:underline font-medium">Portal Stripe →</a>
+            </div>
+            <div class="flex justify-between py-3 text-sm">
+              <span class="text-slate-400">Pobierz faktury</span>
+              <a href="https://billing.stripe.com" target="_blank" class="text-emerald-400 hover:underline font-medium">Stripe Dashboard →</a>
+            </div>
+          </div>
+        </div>
+        <p class="text-slate-500 text-xs mt-4">Pytania o rozliczenia? <a href="mailto:kontakt@latwyzwrot.pl" class="text-emerald-400 hover:underline">kontakt@latwyzwrot.pl</a></p>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="bg-slate-900 border-t border-slate-800 px-6 py-3 flex justify-between items-center text-xs text-slate-500 flex-shrink-0">
+      <span>ŁatwyZwrot.pl — Art. 11a Dyrektywy UE 2023/2673</span>
+      <span>Wsparcie: <a href="mailto:kontakt@latwyzwrot.pl" class="text-emerald-400 hover:underline">kontakt@latwyzwrot.pl</a></span>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const API = 'https://jednymklik-production.up.railway.app';
+const WIDGET_URL = 'https://jednymklik-production.up.railway.app/widget.js';
+let STATE = { email:'', token:'', shopName:'', withdrawals:[], showToken:false };
+
+// Countdown
+(function(){
+  var d = Math.ceil((new Date('2026-06-19') - new Date()) / 86400000);
+  ['kpi-days'].forEach(id => { var el=document.getElementById(id); if(el) el.textContent=d; });
+})();
+
+// Auto-login
+(function(){
+  try {
+    const s = JSON.parse(localStorage.getItem('lz_session')||'{}');
+    if(s.email && s.token) { STATE.email=s.email; STATE.token=s.token; initApp(); }
+  } catch(e) {}
+})();
+
+// Login
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const token = document.getElementById('login-token').value.trim();
+  if(!email||!token) { showLoginError('Podaj email i token.'); return; }
+  const btn = document.getElementById('login-btn');
+  btn.innerHTML = '<i class="fa-solid fa-spinner spinner"></i> Logowanie...';
+  btn.disabled = true;
+  STATE.email=email; STATE.token=token;
+  localStorage.setItem('lz_session', JSON.stringify({email,token}));
+  await initApp();
+  btn.innerHTML = 'Zaloguj się →';
+  btn.disabled = false;
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent=msg; el.classList.remove('hidden');
+}
+
+document.getElementById('login-token').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('login-email').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('login-token').focus(); });
+
+async function initApp() {
+  document.getElementById('login-screen').style.display='none';
+  const app = document.getElementById('app');
+  app.style.display='block';
+  app.classList.remove('hidden');
+
+  // Pobierz dane sklepu
+  try {
+    const [shopRes, wRes] = await Promise.all([
+      fetch(`${API}/api/v1/shop/me`, { headers:{'X-Shop-Token':STATE.token} }),
+      fetch(`${API}/api/v1/withdrawals/all`, { headers:{'X-Shop-Token':STATE.token} })
+    ]);
+    if(shopRes.ok) {
+      const s = await shopRes.json();
+      STATE.shopName = s.shop_name || s.owner_email || STATE.email;
+      STATE.plan = s.plan || 'starter';
+      const planLimits = {starter:15, pro:80, business:250};
+      STATE.limit = planLimits[STATE.plan] || 15;
+      document.getElementById('kpi-limit').textContent = STATE.limit;
+      document.getElementById('billing-limit').textContent = STATE.limit;
+      document.getElementById('sidebar-plan-badge').textContent = STATE.plan.charAt(0).toUpperCase()+STATE.plan.slice(1);
+      document.getElementById('billing-plan').textContent = STATE.plan.charAt(0).toUpperCase()+STATE.plan.slice(1);
+      document.getElementById('billing-plan-card').textContent = STATE.plan.charAt(0).toUpperCase()+STATE.plan.slice(1);
+      const prices = {starter:'19 zł', pro:'49 zł', business:'99 zł'};
+      document.getElementById('billing-price-card').textContent = prices[STATE.plan]||'19 zł';
+    }
+    if(wRes.ok) {
+      const d = await wRes.json();
+      STATE.withdrawals = d.withdrawals||[];
+      if(!STATE.shopName) STATE.shopName = d.shop_name||STATE.email;
+    }
+  } catch(e) {
+    STATE.shopName = STATE.email;
+  }
+
+  const shopDisplay = STATE.shopName || STATE.email;
+  const initials = shopDisplay.charAt(0).toUpperCase();
+
+  document.getElementById('sidebar-avatar').textContent = initials;
+  document.getElementById('sidebar-shop').textContent = shopDisplay;
+  document.getElementById('sidebar-email-small').textContent = STATE.email;
+  document.getElementById('welcome-shop').textContent = shopDisplay;
+  document.getElementById('welcome-email').textContent = STATE.email;
+  document.getElementById('topbar-shop').textContent = shopDisplay;
+  document.getElementById('billing-email').textContent = STATE.email;
+  document.getElementById('cert-shop').textContent = shopDisplay;
+  document.getElementById('cert-date').textContent = new Date().toLocaleDateString('pl-PL');
+  document.getElementById('cert-updated').textContent = new Date().toLocaleString('pl-PL');
+
+  updateSnippet();
+  renderWithdrawals();
+}
+
+function getMaskedToken() {
+  const t = STATE.token;
+  if(!t) return '—';
+  return STATE.showToken ? t : t.substring(0,8)+'••••••••••••••••••••••••••••'+t.slice(-4);
+}
+
+function updateSnippet() {
+  const token = STATE.showToken ? STATE.token : STATE.token;
+  const snippet = `<script src="${WIDGET_URL}" data-shop-token="${token}" data-order-id="NUMER_ZAMOWIENIA" data-customer-email="EMAIL_KLIENTA"><\/script>`;
+  ['snippet-dash','snippet-full'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent=snippet;
+  });
+}
+
+function toggleToken() {
+  STATE.showToken = !STATE.showToken;
+  updateSnippet();
+  const btn = document.getElementById('btn-token');
+  btn.innerHTML = STATE.showToken ? '<i class="fa-solid fa-eye-slash"></i> Ukryj' : '<i class="fa-solid fa-eye"></i> Token';
+}
+
+function renderWithdrawals() {
+  const w = STATE.withdrawals;
+  document.getElementById('kpi-total').textContent = w.length;
+  document.getElementById('kpi-used').textContent = w.length;
+  document.getElementById('billing-used').textContent = w.length;
+
+  const empty = `<div class="text-center py-10 text-slate-500"><div class="text-5xl mb-3">📭</div><div class="text-sm font-medium">Brak odstąpień</div><div class="text-xs mt-1 text-slate-600">Widget aktywny — pierwsze odstąpienie pojawi się tutaj automatycznie</div></div>`;
+
+  if(!w.length) {
+    document.getElementById('dashboard-recent').innerHTML = empty;
+    document.getElementById('withdrawals-table').innerHTML = empty;
+    return;
+  }
+
+  const recentRows = w.slice(0,5).map(r=>`
+    <tr class="border-b border-slate-800 text-xs hover:bg-slate-800/30">
+      <td class="py-2.5 text-slate-400">${new Date(r.timestamp_initiated).toLocaleString('pl-PL')}</td>
+      <td class="py-2.5">${r.order_id||'—'}</td>
+      <td class="py-2.5 text-slate-400 truncate max-w-[120px]">${r.customer_email||'—'}</td>
+    </tr>`).join('');
+
+  document.getElementById('dashboard-recent').innerHTML = `
+    <table class="w-full"><thead>
+      <tr class="text-xs text-slate-500 border-b border-slate-800">
+        <th class="pb-2 text-left font-medium">Data</th>
+        <th class="pb-2 text-left font-medium">Zamówienie</th>
+        <th class="pb-2 text-left font-medium">Email</th>
+      </tr></thead><tbody>${recentRows}</tbody></table>`;
+
+  const allRows = w.map(r=>`
+    <tr class="border-b border-slate-800/50 text-sm hover:bg-slate-800/30">
+      <td class="px-5 py-3.5 text-slate-400 text-xs">${new Date(r.timestamp_initiated).toLocaleString('pl-PL')}</td>
+      <td class="px-5 py-3.5 text-xs">${r.customer_email||'—'}</td>
+      <td class="px-5 py-3.5 text-xs">${r.order_id||'—'}</td>
+      <td class="px-5 py-3.5">
+        <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${r.status==='confirmed'?'bg-emerald-900/50 text-emerald-400':'bg-amber-900/50 text-amber-400'}">
+          ${r.status==='confirmed'?'✓ Potwierdzone':'⏳ Zainicjowane'}
+        </span>
+      </td>
+      <td class="px-5 py-3.5 text-xs text-slate-400">${r.deadline_return||'—'}</td>
+    </tr>`).join('');
+
+  document.getElementById('withdrawals-table').innerHTML = `
+    <table class="w-full"><thead class="bg-slate-800/40">
+      <tr class="text-xs text-slate-500">
+        <th class="px-5 py-3 text-left font-medium">Data</th>
+        <th class="px-5 py-3 text-left font-medium">Email klienta</th>
+        <th class="px-5 py-3 text-left font-medium">Nr zamówienia</th>
+        <th class="px-5 py-3 text-left font-medium">Status</th>
+        <th class="px-5 py-3 text-left font-medium">Termin zwrotu</th>
+      </tr></thead><tbody>${allRows}</tbody></table>`;
+}
+
+function showSection(id, el) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    n.classList.remove('bg-emerald-600','text-white');
+    n.classList.add('text-slate-300');
+  });
+  document.getElementById(id).classList.add('active');
+  if(el){ el.classList.add('bg-emerald-600','text-white'); el.classList.remove('text-slate-300'); }
+  const titles={dashboard:'Dashboard',widget:'Widget & Kod',odstapienia:'Odstąpienia',certyfikat:'Certyfikat',rozliczenia:'Rozliczenia'};
+  document.getElementById('page-title').textContent = titles[id]||id;
+  return false;
+}
+
+function copySnippetQuick() {
+  const t = document.getElementById('snippet-dash').textContent;
+  navigator.clipboard.writeText(t).then(()=>{
+    const b=document.getElementById('btn-copy-dash');
+    b.innerHTML='<i class="fa-solid fa-check"></i> Skopiowano!';
+    setTimeout(()=>b.innerHTML='<i class="fa-solid fa-copy"></i> Skopiuj kod do schowka',2000);
+    const bt=document.getElementById('btn-copy-top');
+    bt.innerHTML='<i class="fa-solid fa-check"></i> <span class="hidden sm:inline">Skopiowano!</span>';
+    setTimeout(()=>bt.innerHTML='<i class="fa-solid fa-copy"></i> <span class="hidden sm:inline">Kopiuj snippet</span>',2000);
+  });
+}
+
+function copySnippetFull() {
+  const t = document.getElementById('snippet-full').textContent;
+  navigator.clipboard.writeText(t).then(()=>{
+    const b=document.getElementById('btn-copy-full');
+    b.innerHTML='<i class="fa-solid fa-check"></i> Skopiowano!';
+    setTimeout(()=>b.innerHTML='<i class="fa-solid fa-copy"></i> Kopiuj kod',2000);
+  });
+}
+
+function exportCSV() {
+  if(!STATE.withdrawals.length){alert('Brak odstąpień do eksportu.');return;}
+  const h=['Data','Email klienta','Nr zamówienia','Status','Termin zwrotu'];
+  const rows=STATE.withdrawals.map(r=>[
+    new Date(r.timestamp_initiated).toLocaleString('pl-PL'),
+    r.customer_email||'',r.order_id||'',r.status||'',r.deadline_return||''
+  ]);
+  const csv=[h,...rows].map(r=>r.join(';')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`odstapienia-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+function downloadCert() {
+  alert('Certyfikat PDF — funkcja w przygotowaniu. Napisz na kontakt@latwyzwrot.pl aby otrzymać certyfikat.');
+}
+
+function doLogout() {
+  localStorage.removeItem('lz_session');
+  STATE={email:'',token:'',shopName:'',withdrawals:[],showToken:false};
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+</script>
+</body>
+</html>
