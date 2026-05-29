@@ -629,6 +629,31 @@
     }
 
     // ─────────────────────────────────────────────
+    // LEADY — wysyłka leada z chatbota na backend
+    // ─────────────────────────────────────────────
+    async function saveLead(lead) {
+        try {
+            const response = await fetch(`${API_BASE}/api/v1/leads`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email:   lead.email,
+                    name:    lead.name    || null,
+                    phone:   lead.phone   || null,
+                    message: lead.message || null,
+                    source:  lead.source  || 'chatbot',
+                    shop_id: CONFIG.shopId || null,
+                })
+            });
+            if (!response.ok) throw new Error('API error: ' + response.status);
+            return await response.json();
+        } catch (err) {
+            console.error('JednymKlik saveLead error:', err);
+            return { success: false, error: String(err) };
+        }
+    }
+
+    // ─────────────────────────────────────────────
     // INICJALIZACJA
     // ─────────────────────────────────────────────
     function init() {

@@ -26,6 +26,30 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("jednymklik")
 
 
+# ─────────────────────────────────────────────
+# RATE-LIMIT (in-memory, sliding window po IP)
+# UWAGA: trzymane w pamięci procesu. Wystarczy na 1 instancję (Railway MVP).
+# Jeśli wrzucisz >1 replikę, limit liczy się per-instancja — wtedy
+# przenieś licznik do Redis/Supabase. Na start to wystarczy.
+# ─────────────────────────────────────────────
+from collections import defaultdict, deque
+import threading
+
+_rate_lock = threading.Lock()
+_rate_hits: dict = defaultdict(deque)
+
+def rate_limit(key: str, max_calls: int, window_sec: int) -> bool:
+    """Zwraca True jeśli request mieści się w limicie, False jeśli przekroczony."""
+    now = datetime.utcnow().timestamp()
+    with _rate_lock:
+        q = _rate_hits[key]
+        while q and q[0] <= now - window_sec:
+            q.popleft()
+        if len(q) >= max_calls:
+            return False
+        q.append(now)
+        return True
+
 app = FastAPI(title="JednymKlik.pl API", version="1.0.0")
 
 # ─────────────────────────────────────────────
@@ -484,3 +508,85 @@ async def get_withdrawal_status(withdrawal_id: str):
         "deadline_return": w["deadline_return"],
         "email_sent": w["email_sent"],
     }
+
+# ─────────────────────────────────────────────
+# WAITLIST — zapis na listę oczekujących
+# Endpoint dla /rejestracja.html (przed publicznym launchem)
+# Tabela `waitlist`: (id uuid pk, email text unique, created_at timestamptz, source text, ip text)
+# ─────────────────────────────────────────────
+class WaitlistEntry(BaseModel):
+    email: EmailStr
+
+@app.post("/api/v1/waitlist")
+async def add_to_waitlist(data: WaitlistEntry, request: Request):
+    email = data.email.lower().strip()
+    client_ip = request.client.host if request.client else None
+
+    try:
+        existing = await sb_select_one("waitlist", {"email": email})
+    except Exception as e:
+        log.error(f"Waitlist select error: {e}")
+        # Nie blokujemy — jeśli nie wiemy czy istnieje, pozwalamy spróbować zapisać.
+        existing = None
+
+    if existing:
+        # E-mail już zapisany — zwracamy success (klient widzi to samo, nie ujawniamy listy)
+        return {"success": True, "message": "Już jesteś na liście."}
+
+    record = {
+        "id": str(uuid.uuid4()),
+        "email": email,
+        "source": "rejestracja.html",
+        "ip": client_ip,
+        "created_at": datetime.utcnow().isoformat(),
+    }
+
+    try:
+        await sb_insert("waitlist", record)
+    except Exception as e:
+        log.error(f"Waitlist insert error: {e}")
+        raise HTTPException(status_code=500, detail="Nie udało się zapisać. Spróbuj ponownie.")
+
+    return {"success": True, "message": "Zapisano. Powiadomimy Cię przy starcie."}
+
+# ─────────────────────────────────────────────
+# LEADS — zapis leadów z widgetu chatbota
+# Tabela `leads`: (id uuid pk, name text, email text, phone text,
+#   message text, source text, shop_id text, ip text, created_at timestamptz)
+# ─────────────────────────────────────────────
+class Lead(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    message: Optional[str] = None
+    source: Optional[str] = "chatbot"
+    shop_id: Optional[str] = None
+
+@app.post("/api/v1/leads")
+async def create_lead(data: Lead, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+
+    # Rate-limit: max 5 leadów / 10 min / IP
+    if not rate_limit(f"leads:{client_ip}", max_calls=5, window_sec=600):
+        log.warning(f"Rate limit hit for leads from IP: {client_ip}")
+        raise HTTPException(status_code=429, detail="Zbyt wiele zgłoszeń. Spróbuj później.")
+
+    record = {
+        "id": str(uuid.uuid4()),
+        "name": data.name,
+        "email": data.email.lower().strip(),
+        "phone": data.phone,
+        "message": data.message,
+        "source": data.source,
+        "shop_id": data.shop_id,
+        "ip": client_ip,
+        "created_at": datetime.utcnow().isoformat(),
+    }
+    try:
+        inserted = await sb_insert("leads", record)
+    except Exception as e:
+        log.error(f"Lead insert error: {e}")
+        raise HTTPException(status_code=500, detail="Nie udało się zapisać leada.")
+
+    log.info(f"Lead saved: {record['email']} | source: {data.source}")
+    return {"success": True, "lead_id": inserted.get("id", record["id"]), "message": "Lead zapisany."}
